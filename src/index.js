@@ -1,33 +1,72 @@
 import { createStore } from 'redux';
 
-const add = document.getElementById('add');
-const minus = document.getElementById('minus');
-const number = document.querySelector('span');
-const ADD = 'ADD';
-const MINUS = 'MINUS';
-number.innerText = 0;
+const form = document.querySelector('form');
+const input = document.querySelector('input');
+const ul = document.querySelector('ul');
 
-//state 변경하는 역할
-const countReducer = (count = 0, countAction) => {
-  switch (countAction.type) {
-    case ADD:
-      return count + 1;
-    case MINUS:
-      return count - 1;
+//Types
+const ADD_TODO = 'ADD_TODO';
+const DELETE_TODO = 'DELETE_TODO';
+
+//Action
+const addAct = (text) => {
+  return {
+    type: ADD_TODO,
+    text,
+  };
+};
+const deleteAct = (id) => {
+  return {
+    type: DELETE_TODO,
+    id,
+  };
+};
+
+const reducer = (state = [], action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return [...state, { text: action.text, id: Date.now() }];
+    case DELETE_TODO:
+      return state.filter((todo) => todo.id !== parseInt(action.id));
     default:
-      return count;
+      return state;
   }
 };
 
-const countStore = createStore(countReducer);
+const store = createStore(reducer);
 
-const onChange = () => {
-  number.innerText = countStore.getState();
+//Dispatch
+const dispatchAddTodo = (text) => {
+  store.dispatch(addAct(text));
+};
+const dispatchDeleteTodo = (e) => {
+  const id = e.target.parentNode.id;
+  store.dispatch(deleteAct(id));
 };
 
-//state 에 변화가 있다면 함수가 실행됨
-countStore.subscribe(onChange);
+//Paint screen
+const paintTodos = () => {
+  const toDos = store.getState();
+  ul.innerHTML = '';
+  toDos.forEach((toDo) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.innerText = 'DEL';
+    btn.addEventListener('click', dispatchDeleteTodo);
+    li.id = toDo.id;
+    li.innerText = toDo.text;
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+};
+store.subscribe(paintTodos);
 
-//reducer 에 어떻게 데이터를 변경할지 알려주는 역할
-add.addEventListener('click', () => countStore.dispatch({ type: ADD }));
-minus.addEventListener('click', () => countStore.dispatch({ type: MINUS }));
+//Add
+const onSubmit = (e) => {
+  e.preventDefault();
+  const toDo = input.value;
+  input.value = '';
+  dispatchAddTodo(toDo);
+};
+
+form.addEventListener('submit', onSubmit);
